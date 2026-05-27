@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EnergyWise — Monitor de Consumo</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0C0F14;
+    --surface:   #13181F;
+    --border:    #1E2730;
+    --border2:   #2A3440;
+    --green:     #00E5A0;
+    --green-dim: #00E5A020;
+    --red:       #FF4D6A;
+    --red-dim:   #FF4D6A20;
+    --amber:     #FFB800;
+    --amber-dim: #FFB80020;
+    --text:      #EEF0F3;
+    --muted:     #6B7A8D;
+    --card:      #161C24;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── layout ── */
+  .shell {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── header ── */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 48px;
+  }
+  .brand-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green);
+  }
+  .brand-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .brand-tag {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--border);
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-left: 4px;
+  }
+
+  /* ── step indicator ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 40px;
+  }
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: color .3s;
+  }
+  .step-item.active { color: var(--green); }
+  .step-item.done   { color: var(--muted); }
+  .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    transition: all .3s;
+  }
+  .step-item.active .step-num {
+    border-color: var(--green);
+    background: var(--green-dim);
+    color: var(--green);
+  }
+  .step-item.done .step-num {
+    border-color: var(--border2);
+    background: var(--border);
+    color: var(--muted);
+  }
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border2);
+    margin: 0 12px;
+  }
+
+  /* ── section title ── */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .section-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  /* ── cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  /* ── form fields ── */
+  .field-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .field-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field-input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-dim);
+  }
+  .field-input::placeholder { color: var(--muted); }
+  .field-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .field-group {
+    margin-bottom: 20px;
+  }
+
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* ── buttons ── */
+  .btn-primary {
+    background: var(--green);
+    color: #0C0F14;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    letter-spacing: .2px;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-danger:hover { background: var(--red-dim); }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px dashed #00E5A050;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    transition: background .2s;
+    margin-top: 8px;
+  }
+  .btn-add:hover { background: #00E5A030; }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    justify-content: flex-end;
+  }
+
+  /* ── aparelho card ── */
+  .device-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .device-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .device-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: .5px;
+  }
+
+  /* ── resultado ── */
+  .result-hero {
+    border-radius: 20px;
+    padding: 36px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid;
+  }
+  .result-hero.ok      { background: var(--green-dim); border-color: #00E5A040; }
+  .result-hero.over    { background: var(--red-dim);   border-color: #FF4D6A40; }
+  .result-hero.neutral { background: var(--amber-dim); border-color: #FFB80040; }
+
+  .result-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: .7;
+  }
+  .result-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+  }
+  .result-value.green  { color: var(--green); }
+  .result-value.red    { color: var(--red); }
+  .result-value.amber  { color: var(--amber); }
+  .result-desc {
+    font-size: 14px;
+    opacity: .6;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  /* ── device breakdown ── */
+  .breakdown-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .device-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .device-row:last-child { border-bottom: none; }
+  .device-name { font-size: 14px; font-weight: 500; }
+  .device-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .device-cost {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .bar-wrap {
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--green);
+    transition: width .6s ease;
+  }
+
+  .restart-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color .2s, border-color .2s;
+  }
+  .restart-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  /* ── error ── */
+  .error-msg {
+    font-size: 12px;
+    color: var(--red);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  @media (max-width: 560px) {
+    .row-2, .row-3 { grid-template-columns: 1fr; }
+    .stats-grid    { grid-template-columns: 1fr; }
+    .result-value  { font-size: 38px; }
+    .shell         { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtKwh = (v) => v.toFixed(2).replace('.', ',') + ' kWh';
+
+const STEPS = ['Empresa', 'Aparelhos', 'Resultado'];
+
+function StepBar({ current }) {
+  return (
+    <div className="steps">
+      {STEPS.map((s, i) => (
+        <React.Fragment key={i}>
+          <div className={`step-item ${i === current ? 'active' : i < current ? 'done' : ''}`}>
+            <div className="step-num">
+              {i < current ? '✓' : i + 1}
+            </div>
+            <span>{s}</span>
+          </div>
+          {i < STEPS.length - 1 && <div className="step-line" />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+function Step1({ onNext }) {
+  const [tarifa, setTarifa] = useState('');
+  const [conta, setConta] = useState('');
+  const [dias, setDias] = useState('30');
+  const [empresa, setEmpresa] = useState('');
+  const [error, setError] = useState('');
+
+  const handle = () => {
+    if (!empresa.trim()) return setError('Informe o nome da empresa.');
+    if (!tarifa || isNaN(tarifa) || +tarifa <= 0) return setError('Informe uma tarifa válida.');
+    if (!conta || isNaN(conta) || +conta <= 0) return setError('Informe o valor da conta.');
+    if (!dias || isNaN(dias) || +dias <= 0) return setError('Informe o número de dias do período.');
+    setError('');
+    onNext({ empresa: empresa.trim(), tarifa: +tarifa, conta: +conta, dias: +dias });
+  };
+
+  return (
+    <div>
+      <p className="section-title">Dados da empresa</p>
+      <p className="section-sub">Informe os dados básicos do estabelecimento e da última fatura de energia.</p>
+
+      <div className="card">
+        <div className="field-group">
+          <label className="field-label">Nome da empresa</label>
+          <input className="field-input" placeholder="Ex: Padaria Central" value={empresa} onChange={e => setEmpresa(e.target.value)} />
+        </div>
+
+        <div className="row-2">
+          <div className="field-group">
+            <label className="field-label">Tarifa de energia (R$/kWh)</label>
+            <input className="field-input" type="number" step="0.01" placeholder="Ex: 0,85" value={tarifa} onChange={e => setTarifa(e.target.value)} />
+            <p className="field-hint">Verifique na sua fatura ou distribuidora local.</p>
+          </div>
+          <div className="field-group">
+            <label className="field-label">Valor da conta do mês (R$)</label>
+            <input className="field-input" type="number" step="0.01" placeholder="Ex: 1200,00" value={conta} onChange={e => setConta(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="field-group" style={{marginBottom: 0}}>
+          <label className="field-label">Dias no período da conta</label>
+          <input className="field-input" type="number" placeholder="30" value={dias} onChange={e => setDias(e.target.value)} style={{maxWidth: 180}} />
+          <p className="field-hint">Normalmente 30 dias. Verifique na fatura.</p>
+        </div>
+      </div>
+
+      {error && <p className="error-msg">⚠ {error}</p>}
+
+      <div className="btn-row">
+        <button className="btn-primary" onClick={handle}>Continuar →</button>
+      </div>
+    </div>
+  );
+}
+
+const emptyDevice = () => ({ nome: '', potencia: '', horas: '' });
+
+function Step2({ onNext, onBack }) {
+  const [devices, setDevices] = useState([emptyDevice()]);
+  const [error, setError] = useState('');
+
+  const update = (i, field, val) => {
+    setDevices(prev => prev.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
+  };
+
+  const add = () => setDevices(prev => [...prev, emptyDevice()]);
+
+  const remove = (i) => {
+    if (devices.length === 1) return;
+    setDevices(prev => prev.filter((_, idx) => idx !== i));
+  };
+
+  const handle = () => {
+    for (let i = 0; i < devices.length; i++) {
+      const d = devices[i];
+      if (!d.nome.trim()) return setError(`Aparelho ${i+1}: informe o nome.`);
+      if (!d.potencia || isNaN(d.potencia) || +d.potencia <= 0) return setError(`Aparelho ${i+1}: informe a potência em Watts.`);
+      if (!d.horas || isNaN(d.horas) || +d.horas <= 0) return setError(`Aparelho ${i+1}: informe as horas de uso por dia.`);
+      if (+d.horas > 24) return setError(`Aparelho ${i+1}: máximo de 24 horas por dia.`);
+    }
+    setError('');
+    onNext(devices.map(d => ({ ...d, potencia: +d.potencia, horas: +d.horas })));
+  };
+
+  return (
+    <div>
+      <p className="section-title">Aparelhos do estabelecimento</p>
+      <p className="section-sub">Adicione cada equipamento que fica ligado na sua empresa. Informe a potência (em Watts) e as horas de uso médio por dia.</p>
+
+      {devices.map((d, i) => (
+        <div className="device-card" key={i}>
+          <div className="device-header">
+            <span className="device-num">APARELHO {String(i+1).padStart(2,'0')}</span>
+            {devices.length > 1 && (
+              <button className="btn-danger" onClick={() => remove(i)}>✕ Remover</button>
+            )}
+          </div>
+          <div className="row-3">
+            <div className="field-group" style={{marginBottom:0, gridColumn: '1 / span 1'}}>
+              <label className="field-label">Nome</label>
+              <input className="field-input" placeholder="Ex: Ar condicionado" value={d.nome} onChange={e => update(i, 'nome', e.target.value)} />
+            </div>
+            <div className="field-group" style={{marginBottom:0}}>
+              <label className="field-label">Potência (W)</label>
+              <input className="field-input" type="number" placeholder="Ex: 1500" value={d.potencia} onChange={e => update(i, 'potencia', e.target.value)} />
+              <p className="field-hint">Consta na etiqueta do aparelho.</p>
+            </div>
+            <div className="field-group" style={{marginBottom:0}}>
+              <label className="field-label">Horas/dia em uso</label>
+              <input className="field-input" type="number" step="0.5" placeholder="Ex: 8" value={d.horas} onChange={e => update(i, 'horas', e.target.value)} />
+              <p className="field-hint">Média de uso diário.</p>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <button className="btn-add" onClick={add}>+ Adicionar aparelho</button>
+
+      {error && <p className="error-msg">⚠ {error}</p>}
+
+      <div className="btn-row">
+        <button className="btn-ghost" onClick={onBack}>← Voltar</button>
+        <button className="btn-primary" onClick={handle}>Ver resultado →</button>
+      </div>
+    </div>
+  );
+}
+
+function Step3({ empresa, tarifa, conta, dias, devices, onRestart }) {
+  // kWh por aparelho no período
+  const calcs = devices.map(d => {
+    const kwh = (d.potencia / 1000) * d.horas * dias;
+    const custo = kwh * tarifa;
+    return { ...d, kwh, custo };
+  });
+
+  const totalKwh  = calcs.reduce((s, d) => s + d.kwh, 0);
+  const totalCalc = calcs.reduce((s, d) => s + d.custo, 0);
+  const diff      = conta - totalCalc;
+  const pct       = totalCalc > 0 ? Math.abs(diff / conta * 100).toFixed(1) : '0';
+
+  const maxCusto = Math.max(...calcs.map(d => d.custo));
+
+  let heroClass, valClass, label, desc;
+  if (Math.abs(diff) < 0.01) {
+    heroClass = 'neutral'; valClass = 'amber'; label = 'CONSUMO EXATO';
+    desc = 'Os aparelhos cadastrados explicam exatamente o valor da fatura. Nenhum consumo oculto detectado.';
+  } else if (diff > 0) {
+    heroClass = 'over'; valClass = 'red'; label = 'CONSUMO NÃO IDENTIFICADO';
+    desc = `Há R$ ${fmt(diff).replace('R$\u00a0','')} que os aparelhos cadastrados não explicam. Verifique se algum equipamento está faltando ou com consumo acima do esperado.`;
+  } else {
+    heroClass = 'ok'; valClass = 'green'; label = 'CONSUMO DENTRO DO ESTIMADO';
+    desc = `O custo estimado dos aparelhos (${fmt(totalCalc)}) supera levemente a fatura. Pode haver aparelhos com uso menor que o informado.`;
+  }
+
+  return (
+    <div>
+      <p className="section-title">{empresa}</p>
+      <p className="section-sub">Resultado da análise de consumo — período de {dias} dias.</p>
+
+      <div className={`result-hero ${heroClass}`}>
+        <p className="result-label">{label}</p>
+        <p className={`result-value ${valClass}`}>{diff >= 0 ? '+' : ''}{fmt(diff)}</p>
+        <p className="result-desc">{desc}</p>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card">
+          <p className="stat-label">Valor da fatura</p>
+          <p className="stat-val">{fmt(conta)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Estimado pelos aparelhos</p>
+          <p className="stat-val">{fmt(totalCalc)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Consumo total estimado</p>
+          <p className="stat-val">{fmtKwh(totalKwh)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Diferença percentual</p>
+          <p className="stat-val" style={{color: diff > 0 ? 'var(--red)' : 'var(--green)'}}>{pct}%</p>
+        </div>
+      </div>
+
+      <div className="card">
+        <p className="breakdown-title">Consumo por aparelho</p>
+        {calcs.sort((a,b) => b.custo - a.custo).map((d, i) => (
+          <div className="device-row" key={i}>
+            <div style={{flex:1}}>
+              <p className="device-name">{d.nome}</p>
+              <p className="device-detail">{d.potencia}W · {d.horas}h/dia · {fmtKwh(d.kwh)}</p>
+              <div className="bar-wrap">
+                <div className="bar-fill" style={{width: maxCusto > 0 ? `${(d.custo/maxCusto*100).toFixed(1)}%` : '0%'}} />
+              </div>
+            </div>
+            <p className="device-cost" style={{marginLeft: 20}}>{fmt(d.custo)}</p>
+          </div>
+        ))}
+      </div>
+
+      <button className="restart-btn" onClick={onRestart}>↩ Nova análise</button>
+    </div>
+  );
+}
+
+function App() {
+  const [step, setStep]       = useState(0);
+  const [s1, setS1]           = useState(null);
+  const [devices, setDevices] = useState(null);
+
+  return (
+    <div className="shell">
+      <div className="brand">
+        <div className="brand-dot" />
+        <span className="brand-name">EnergyWise</span>
+        <span className="brand-tag">MVP</span>
+      </div>
+
+      <StepBar current={step} />
+
+      {step === 0 && (
+        <Step1 onNext={data => { setS1(data); setStep(1); }} />
+      )}
+      {step === 1 && (
+        <Step2
+          onNext={devs => { setDevices(devs); setStep(2); }}
+          onBack={() => setStep(0)}
+        />
+      )}
+      {step === 2 && s1 && devices && (
+        <Step3
+          {...s1}
+          devices={devices}
+          onRestart={() => { setS1(null); setDevices(null); setStep(0); }}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
