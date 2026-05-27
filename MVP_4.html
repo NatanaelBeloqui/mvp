@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Split Energy — Monitor de Consumo</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0C0F14;
+  --surface:#13181F;
+  --surface2:#1A2130;
+  --border:#1E2730;
+  --border2:#2A3440;
+  --green:#00E5A0;
+  --green-dim:#00E5A018;
+  --green-mid:#00E5A035;
+  --red:#FF4D6A;
+  --red-dim:#FF4D6A18;
+  --amber:#FFB800;
+  --amber-dim:#FFB80018;
+  --blue:#4D9EFF;
+  --blue-dim:#4D9EFF18;
+  --text:#EEF0F3;
+  --muted:#6B7A8D;
+  --muted2:#4A5568;
+  --card:#161C24;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+.shell{max-width:800px;margin:0 auto;padding:40px 24px 100px;}
+
+/* brand */
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:40px;}
+.brand-dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green);animation:pulse 2.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 14px var(--green);}50%{box-shadow:0 0 5px var(--green);}}
+.brand-name{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.3px;}
+.brand-tag{font-size:10px;color:var(--muted);background:var(--border2);padding:3px 8px;border-radius:20px;letter-spacing:.4px;}
+
+/* steps */
+.steps{display:flex;align-items:center;margin-bottom:36px;}
+.step-item{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted2);transition:color .3s;white-space:nowrap;}
+.step-item.active{color:var(--green);}
+.step-item.done{color:var(--muted);}
+.step-num{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;transition:all .3s;flex-shrink:0;}
+.step-item.active .step-num{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+.step-item.done .step-num{border-color:var(--border2);background:var(--border);color:var(--muted);}
+.step-label{display:block;}
+@media(max-width:480px){.step-label{display:none;}}
+.step-line{flex:1;height:1px;background:var(--border2);margin:0 10px;min-width:16px;}
+
+/* type */
+.page-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-.6px;line-height:1.1;margin-bottom:8px;}
+.page-sub{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:24px;max-width:520px;}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:14px;}
+
+/* form */
+.field-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.field-label .tip{font-size:10px;color:var(--muted2);background:var(--border);padding:2px 7px;border-radius:10px;letter-spacing:0;text-transform:none;font-weight:400;}
+.field-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s,background .2s;-webkit-appearance:none;}
+.field-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-dim);background:var(--surface2);}
+.field-input::placeholder{color:var(--muted2);}
+.field-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5;}
+.field-group{margin-bottom:18px;}
+.field-group:last-child{margin-bottom:0;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:560px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+/* buttons */
+.btn-primary{background:var(--green);color:#0a0d10;border:none;border-radius:10px;padding:14px 28px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s;white-space:nowrap;}
+.btn-primary:hover{opacity:.85;}
+.btn-primary:active{transform:scale(.97);}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:10px;padding:14px 22px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:border-color .2s,color .2s;white-space:nowrap;}
+.btn-ghost:hover{border-color:var(--muted);color:var(--text);}
+.btn-add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--green-dim);color:var(--green);border:1px dashed #00E5A045;border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-top:4px;transition:background .2s;}
+.btn-add:hover{background:var(--green-mid);}
+.btn-remove{background:transparent;color:var(--muted);border:1px solid transparent;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;transition:color .2s,background .2s;}
+.btn-remove:hover{color:var(--red);background:var(--red-dim);}
+.btn-row{display:flex;gap:12px;margin-top:28px;justify-content:flex-end;flex-wrap:wrap;}
+.btn-danger-outline{background:transparent;color:var(--red);border:1px solid #FF4D6A30;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;transition:background .2s;}
+.btn-danger-outline:hover{background:var(--red-dim);}
+
+/* device card */
+.device-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:10px;transition:border-color .2s;}
+.device-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.device-num{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:var(--green);letter-spacing:.8px;}
+.device-preview{font-size:12px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:600;}
+.device-preview.has-value{color:var(--green);}
+
+/* live bar */
+.live-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(12,15,20,.94);backdrop-filter:blur(14px);border-top:1px solid var(--border2);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;z-index:100;}
+.live-bar-label{font-size:12px;color:var(--muted);letter-spacing:.4px;}
+.live-bar-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--green);letter-spacing:-.5px;}
+.live-bar-note{font-size:11px;color:var(--muted);margin-top:1px;}
+.live-bar-right{text-align:right;}
+
+/* error */
+.error-box{background:var(--red-dim);border:1px solid #FF4D6A30;border-radius:10px;padding:12px 16px;font-size:13px;color:var(--red);margin-top:12px;display:flex;align-items:center;gap:8px;}
+
+/* result */
+.result-hero{border-radius:20px;padding:40px 32px;margin-bottom:16px;text-align:center;border:1px solid;position:relative;overflow:hidden;}
+.result-hero.ok{background:var(--green-dim);border-color:#00E5A035;}
+.result-hero.over{background:var(--red-dim);border-color:#FF4D6A35;}
+.result-hero.exact{background:var(--amber-dim);border-color:#FFB80035;}
+.result-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 14px;border-radius:20px;border:1px solid currentColor;opacity:.7;margin-bottom:16px;}
+.result-value{font-family:'Syne',sans-serif;font-size:54px;font-weight:800;line-height:1;letter-spacing:-2px;margin-bottom:10px;}
+.result-value.green{color:var(--green);}
+.result-value.red{color:var(--red);}
+.result-value.amber{color:var(--amber);}
+.result-desc{font-size:14px;line-height:1.6;opacity:.65;max-width:380px;margin:0 auto;}
+
+/* stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:600px){.stats-grid{grid-template-columns:1fr 1fr;}}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;line-height:1.4;}
+.stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.4px;line-height:1.1;}
+
+/* breakdown */
+.breakdown-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.breakdown-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.device-row{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);gap:12px;}
+.device-row:last-child{border-bottom:none;}
+.device-rank{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted2);width:20px;flex-shrink:0;text-align:center;}
+.device-info{flex:1;min-width:0;}
+.device-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.device-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.device-bar-wrap{height:3px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden;}
+.device-bar-fill{height:100%;border-radius:3px;background:var(--green);transition:width .8s cubic-bezier(.22,1,.36,1);}
+.device-cost-col{text-align:right;flex-shrink:0;}
+.device-cost{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;}
+.device-pct{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* suggestion box */
+.suggestion-box{background:var(--amber-dim);border:1px solid #FFB80030;border-radius:14px;padding:20px;margin-bottom:14px;display:flex;gap:14px;align-items:flex-start;}
+.suggestion-icon{font-size:22px;flex-shrink:0;}
+.suggestion-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--amber);margin-bottom:4px;}
+.suggestion-text{font-size:13px;color:var(--muted);line-height:1.6;}
+.suggestion-saving{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--amber);margin-top:6px;}
+
+/* alert box */
+.alert-box{background:var(--red-dim);border:1px solid #FF4D6A30;border-radius:14px;padding:20px;margin-bottom:14px;display:flex;gap:14px;align-items:flex-start;}
+.alert-icon{font-size:22px;flex-shrink:0;}
+.alert-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px;}
+.alert-text{font-size:13px;color:var(--muted);line-height:1.6;}
+
+/* history chart */
+.history-chart{margin-top:6px;}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:80px;margin-bottom:8px;}
+.chart-bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.chart-bar-wrap{width:100%;display:flex;gap:3px;align-items:flex-end;height:70px;}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;min-height:4px;transition:height .6s cubic-bezier(.22,1,.36,1);}
+.chart-bar.real{background:var(--blue);opacity:.7;}
+.chart-bar.est{background:var(--green);opacity:.6;}
+.chart-label{font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;}
+.chart-legend{display:flex;gap:16px;margin-top:4px;}
+.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);}
+.chart-legend-dot{width:8px;height:8px;border-radius:2px;}
+
+/* history list */
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);gap:12px;cursor:pointer;transition:opacity .2s;}
+.history-item:last-child{border-bottom:none;}
+.history-item:hover{opacity:.75;}
+.history-month{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+.history-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.history-right{text-align:right;flex-shrink:0;}
+.history-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+.history-diff{font-size:11px;margin-top:2px;}
+.history-diff.over{color:var(--red);}
+.history-diff.ok{color:var(--green);}
+.history-diff.exact{color:var(--amber);}
+
+/* empresa card */
+.empresa-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:10px;cursor:pointer;transition:border-color .2s,background .2s;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.empresa-card:hover{border-color:var(--green);background:var(--surface2);}
+.empresa-nome{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+.empresa-meta{font-size:12px;color:var(--muted);}
+.empresa-arrow{font-size:18px;color:var(--muted2);}
+
+/* info callout */
+.info-callout{background:var(--blue-dim);border:1px solid #4D9EFF25;border-radius:10px;padding:12px 16px;font-size:12px;color:var(--blue);line-height:1.6;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;}
+.info-callout .icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+
+/* print */
+/* esg */
+.esg-box{background:linear-gradient(135deg,#0a2a1a 0%,#0f2d1a 100%);border:1px solid #00E5A025;border-radius:14px;padding:20px;margin-bottom:14px;display:flex;gap:14px;align-items:flex-start;}
+.esg-icon{font-size:22px;flex-shrink:0;}
+.esg-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px;}
+.esg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px;}
+.esg-item{background:#ffffff08;border-radius:8px;padding:10px 12px;}
+.esg-item-label{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.esg-item-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--green);}
+.esg-item-unit{font-size:10px;color:var(--muted);margin-top:2px;}
+@media(max-width:480px){.esg-grid{grid-template-columns:1fr 1fr;}}
+
+/* cost per operation */
+.cpo-box{background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:20px;margin-bottom:14px;}
+.cpo-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.cpo-sub{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.cpo-input-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.cpo-result{margin-top:14px;background:#ffffff06;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.cpo-result-label{font-size:12px;color:var(--muted);}
+.cpo-result-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--amber);}
+.cpo-result-unit{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.btn-print{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;background:var(--blue-dim);color:var(--blue);border:1px solid #4D9EFF30;border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background .2s;}
+.btn-print:hover{background:#4D9EFF25;}
+.btn-restart{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:color .2s,border-color .2s;}
+.btn-restart:hover{color:var(--text);border-color:var(--muted);}
+
+.fade-in{animation:fadeIn .3s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.tag{display:inline-block;font-size:10px;padding:3px 8px;border-radius:10px;font-weight:600;letter-spacing:.3px;}
+.tag.green{background:var(--green-dim);color:var(--green);}
+.tag.red{background:var(--red-dim);color:var(--red);}
+.tag.amber{background:var(--amber-dim);color:var(--amber);}
+
+.empty-state{text-align:center;padding:48px 24px;}
+.empty-icon{font-size:40px;margin-bottom:16px;}
+.empty-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;}
+.empty-sub{font-size:14px;color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto 24px;}
+
+@media print{
+  body{background:#fff;color:#111;}
+  .live-bar,.btn-row,.btn-print,.btn-restart{display:none!important;}
+  .card,.device-card,.stat-card,.result-hero{border-color:#ddd!important;background:#f9f9f9!important;}
+  .result-value,.stat-val,.device-cost,.brand-name{color:#111!important;}
+  .result-value.green{color:#00875a!important;}
+  .result-value.red{color:#cc2936!important;}
+  .result-value.amber{color:#996600!important;}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useEffect } = React;
+
+/* ── utils ── */
+const fmt    = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtKwh = v => v.toFixed(2).replace('.',',')+' kWh';
+const uid    = () => Math.random().toString(36).slice(2,9);
+const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function calcDevice(d, tarifa, dias){
+  const kwh = (parseFloat(d.potencia)||0)/1000*(parseFloat(d.horas)||0)*dias;
+  return { kwh, custo: kwh*tarifa };
+}
+
+/* ── localStorage helpers ── */
+const LS_KEY = 'split-energy_v1';
+function loadData(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||{empresas:[]}; }catch(e){ return {empresas:[]}; } }
+function saveData(data){ localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+
+/* ════════════════════════════════
+   STEP BAR
+════════════════════════════════ */
+const STEPS = ['Empresa','Aparelhos','Resultado'];
+function StepBar({current}){
+  return(
+    <div className="steps">
+      {STEPS.map((s,i)=>(
+        <React.Fragment key={i}>
+          <div className={`step-item ${i===current?'active':i<current?'done':''}`}>
+            <div className="step-num">{i<current?'✓':i+1}</div>
+            <span className="step-label">{s}</span>
+          </div>
+          {i<STEPS.length-1&&<div className="step-line"/>}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   HOME — lista de empresas
+════════════════════════════════ */
+function Home({onSelect, onNew}){
+  const [data, setData] = useState(loadData());
+
+  const deleteEmpresa = (id, e) => {
+    e.stopPropagation();
+    if(!confirm('Excluir esta empresa e todo o histórico?')) return;
+    const next = {...data, empresas: data.empresas.filter(e=>e.id!==id)};
+    saveData(next); setData(next);
+  };
+
+  return(
+    <div className="fade-in">
+      <p className="page-title">Minhas empresas</p>
+      <p className="page-sub">Selecione uma empresa para ver o histórico ou adicionar um novo mês.</p>
+
+      {data.empresas.length===0?(
+        <div className="empty-state">
+          <div className="empty-icon">🏪</div>
+          <p className="empty-title">Nenhuma empresa ainda</p>
+          <p className="empty-sub">Cadastre sua primeira empresa para começar a monitorar o consumo de energia.</p>
+          <button className="btn-primary" onClick={onNew}>+ Cadastrar empresa</button>
+        </div>
+      ):(
+        <>
+          {data.empresas.map(emp=>{
+            const meses = emp.meses||[];
+            const ultimo = meses[meses.length-1];
+            return(
+              <div className="empresa-card" key={emp.id} onClick={()=>onSelect(emp.id)}>
+                <div>
+                  <p className="empresa-nome">{emp.nome}</p>
+                  <p className="empresa-meta">
+                    {meses.length} {meses.length===1?'mês':'meses'} registrado{meses.length!==1?'s':''}
+                    {ultimo&&` · último: ${ultimo.mesLabel}`}
+                  </p>
+                  {ultimo&&(
+                    <span className={`tag ${Math.abs(ultimo.diff)<0.5?'amber':ultimo.diff>0?'red':'green'}`} style={{marginTop:8,display:'inline-block'}}>
+                      {Math.abs(ultimo.diff)<0.5?'Exato':ultimo.diff>0?`+${fmt(ultimo.diff)} não identificado`:`${fmt(Math.abs(ultimo.diff))} abaixo`}
+                    </span>
+                  )}
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <button className="btn-danger-outline" onClick={(e)=>deleteEmpresa(emp.id,e)}>Excluir</button>
+                  <span className="empresa-arrow">→</span>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{marginTop:8}}>
+            <button className="btn-ghost" style={{width:'100%'}} onClick={onNew}>+ Cadastrar nova empresa</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   EMPRESA DETAIL — histórico
+════════════════════════════════ */
+function EmpresaDetail({empresaId, onBack, onNewMes, onViewMes}){
+  const [data, setData] = useState(loadData());
+  const emp = data.empresas.find(e=>e.id===empresaId);
+  if(!emp) return null;
+  const meses = emp.meses||[];
+
+  const deleteMes = (mesId, e) => {
+    e.stopPropagation();
+    if(!confirm('Excluir este registro de mês?')) return;
+    const next = {...data, empresas: data.empresas.map(e=>
+      e.id===empresaId ? {...e, meses: e.meses.filter(m=>m.id!==mesId)} : e
+    )};
+    saveData(next); setData(next);
+  };
+
+  // chart
+  const chartMeses = meses.slice(-6);
+  const maxVal = Math.max(...chartMeses.map(m=>Math.max(m.conta, m.totalCalc)),1);
+
+  return(
+    <div className="fade-in">
+      <button className="btn-ghost" style={{marginBottom:24,padding:'8px 16px',fontSize:13}} onClick={onBack}>← Voltar</button>
+
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16,flexWrap:'wrap',marginBottom:24}}>
+        <div>
+          <p className="page-title">{emp.nome}</p>
+          <p className="page-sub" style={{marginBottom:0}}>Tarifa: R$ {emp.tarifa}/kWh · {meses.length} {meses.length===1?'registro':'registros'}</p>
+        </div>
+        <button className="btn-primary" onClick={()=>onNewMes(empresaId)}>+ Novo mês</button>
+      </div>
+
+      {meses.length===0?(
+        <div className="empty-state">
+          <div className="empty-icon">📊</div>
+          <p className="empty-title">Nenhum mês registrado</p>
+          <p className="empty-sub">Adicione o primeiro mês para começar a visualizar o consumo da empresa.</p>
+        </div>
+      ):(
+        <>
+          {/* CHART */}
+          {chartMeses.length>1&&(
+            <div className="card">
+              <div className="breakdown-header">
+                <p className="breakdown-title">Evolução dos últimos {chartMeses.length} meses</p>
+              </div>
+              <div className="history-chart">
+                <div className="chart-bars">
+                  {chartMeses.map((m,i)=>{
+                    const hReal = (m.conta/maxVal)*70;
+                    const hEst  = (m.totalCalc/maxVal)*70;
+                    return(
+                      <div className="chart-bar-group" key={i}>
+                        <div className="chart-bar-wrap">
+                          <div className="chart-bar real" style={{height:hReal+'px'}} title={`Fatura: ${fmt(m.conta)}`}/>
+                          <div className="chart-bar est"  style={{height:hEst+'px'}}  title={`Estimado: ${fmt(m.totalCalc)}`}/>
+                        </div>
+                        <span className="chart-label">{m.mesLabel}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="chart-legend">
+                  <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--blue)',opacity:.7}}/> Fatura real</div>
+                  <div className="chart-legend-item"><div className="chart-legend-dot" style={{background:'var(--green)',opacity:.6}}/> Estimado</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* LIST */}
+          <div className="card">
+            <div className="breakdown-header">
+              <p className="breakdown-title">Histórico de meses</p>
+            </div>
+            {[...meses].reverse().map(m=>{
+              const diffAbs = Math.abs(m.diff);
+              const cls = diffAbs<0.5?'exact':m.diff>0?'over':'ok';
+              const diffLabel = diffAbs<0.5?'Exato':m.diff>0?`+${fmt(m.diff)} não identificado`:`${fmt(diffAbs)} abaixo do estimado`;
+              return(
+                <div className="history-item" key={m.id} onClick={()=>onViewMes(empresaId,m.id)}>
+                  <div>
+                    <p className="history-month">{m.mesLabel}</p>
+                    <p className="history-meta">{(m.devices||[]).length} aparelhos · {m.dias} dias</p>
+                  </div>
+                  <div style={{flex:1,display:'flex',justifyContent:'center'}}>
+                    <span className={`tag ${cls==='exact'?'amber':cls==='over'?'red':'green'}`}>{diffLabel}</span>
+                  </div>
+                  <div className="history-right">
+                    <p className="history-val">{fmt(m.conta)}</p>
+                    <p className="history-meta">{fmt(m.totalCalc)} est.</p>
+                    <button className="btn-danger-outline" style={{marginTop:4,fontSize:10,padding:'4px 8px'}} onClick={e=>deleteMes(m.id,e)}>Excluir</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   NEW EMPRESA FORM
+════════════════════════════════ */
+function NewEmpresaForm({onSave, onBack}){
+  const [nome, setNome]     = useState('');
+  const [tarifa, setTarifa] = useState('');
+  const [error, setError]   = useState('');
+
+  const handle = () => {
+    if(!nome.trim())        return setError('Informe o nome da empresa.');
+    if(!tarifa||+tarifa<=0) return setError('Informe a tarifa em R$/kWh.');
+    setError('');
+    const data = loadData();
+    const nova = { id: uid(), nome: nome.trim(), tarifa: +tarifa, meses: [] };
+    data.empresas.push(nova);
+    saveData(data);
+    onSave(nova.id);
+  };
+
+  return(
+    <div className="fade-in">
+      <button className="btn-ghost" style={{marginBottom:24,padding:'8px 16px',fontSize:13}} onClick={onBack}>← Voltar</button>
+      <p className="page-title">Nova empresa</p>
+      <p className="page-sub">Cadastre a empresa uma vez. A tarifa pode ser ajustada depois em cada mês.</p>
+
+      <div className="card">
+        <div className="field-group">
+          <label className="field-label">Nome da empresa</label>
+          <input className="field-input" placeholder="Ex: Padaria Central, Farmácia do João…" value={nome} onChange={e=>setNome(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handle()}/>
+        </div>
+        <div className="field-group">
+          <label className="field-label">Tarifa padrão <span className="tip">R$/kWh — na fatura</span></label>
+          <input className="field-input" type="number" step="0.001" min="0" placeholder="Ex: 0,856" value={tarifa} onChange={e=>setTarifa(e.target.value)} style={{maxWidth:220}}/>
+          <p className="field-hint">A tarifa pode ser ajustada em cada lançamento mensal.</p>
+        </div>
+      </div>
+
+      {error&&<div className="error-box">⚠ {error}</div>}
+      <div className="btn-row">
+        <button className="btn-primary" onClick={handle}>Cadastrar →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   STEP 1 — Dados do mês
+════════════════════════════════ */
+function Step1({emp, onNext, onBack}){
+  const now = new Date();
+  const [conta,  setConta]  = useState('');
+  const [tarifa, setTarifa] = useState(String(emp.tarifa));
+  const [dias,   setDias]   = useState('30');
+  const [mes,    setMes]    = useState(String(now.getMonth()));
+  const [ano,    setAno]    = useState(String(now.getFullYear()));
+  const [error,  setError]  = useState('');
+
+  const handle = () => {
+    if(!conta||+conta<=0)    return setError('Informe o valor da fatura.');
+    if(!tarifa||+tarifa<=0)  return setError('Informe a tarifa válida.');
+    if(!dias||+dias<=0)      return setError('Informe o número de dias.');
+    setError('');
+    onNext({ conta:+conta, tarifa:+tarifa, dias:+dias, mes:+mes, ano:+ano, mesLabel:`${MONTHS[+mes]}/${ano}` });
+  };
+
+  const anos = [2023,2024,2025,2026].map(String);
+
+  return(
+    <div className="fade-in">
+      <p className="page-title">Dados do mês</p>
+      <p className="page-sub">Informe os dados da fatura de energia deste período para <strong>{emp.nome}</strong>.</p>
+
+      <div className="info-callout">
+        <span className="icon">💡</span>
+        <span>A tarifa (R$/kWh) e o número de dias do período estão impressos na própria fatura de energia.</span>
+      </div>
+
+      <div className="card">
+        <div className="grid-2">
+          <div className="field-group">
+            <label className="field-label">Mês de referência</label>
+            <select className="field-input" value={mes} onChange={e=>setMes(e.target.value)}>
+              {MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}
+            </select>
+          </div>
+          <div className="field-group">
+            <label className="field-label">Ano</label>
+            <select className="field-input" value={ano} onChange={e=>setAno(e.target.value)}>
+              {anos.map(a=><option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid-2">
+          <div className="field-group">
+            <label className="field-label">Valor total da fatura <span className="tip">R$</span></label>
+            <input className="field-input" type="number" step="0.01" min="0" placeholder="Ex: 1.240,00" value={conta} onChange={e=>setConta(e.target.value)}/>
+          </div>
+          <div className="field-group">
+            <label className="field-label">Tarifa <span className="tip">R$/kWh</span></label>
+            <input className="field-input" type="number" step="0.001" min="0" placeholder="Ex: 0,856" value={tarifa} onChange={e=>setTarifa(e.target.value)}/>
+          </div>
+        </div>
+
+        <div className="field-group">
+          <label className="field-label">Dias no período <span className="tip">normalmente 30</span></label>
+          <input className="field-input" type="number" min="1" max="31" placeholder="30" value={dias} onChange={e=>setDias(e.target.value)} style={{maxWidth:160}}/>
+        </div>
+      </div>
+
+      {error&&<div className="error-box">⚠ {error}</div>}
+      <div className="btn-row">
+        <button className="btn-ghost" onClick={onBack}>← Voltar</button>
+        <button className="btn-primary" onClick={handle}>Continuar →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   STEP 2 — Aparelhos
+════════════════════════════════ */
+const emptyDev = () => ({id:uid(),nome:'',potencia:'',horas:''});
+
+function DeviceCard({d,i,tarifa,dias,onChange,onRemove,canRemove}){
+  const {custo} = calcDevice(d,tarifa,dias);
+  const hasVal  = d.potencia&&d.horas&&+d.potencia>0&&+d.horas>0;
+  return(
+    <div className="device-card fade-in">
+      <div className="device-header">
+        <span className="device-num">Aparelho {String(i+1).padStart(2,'0')}</span>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          {hasVal&&<span className="device-preview has-value">{fmt(custo)}/mês</span>}
+          {canRemove&&<button className="btn-remove" onClick={onRemove}>✕ Remover</button>}
+        </div>
+      </div>
+      <div className="grid-3">
+        <div className="field-group" style={{marginBottom:0}}>
+          <label className="field-label">Nome</label>
+          <input className="field-input" placeholder="Ex: Ar condicionado" value={d.nome} onChange={e=>onChange('nome',e.target.value)}/>
+        </div>
+        <div className="field-group" style={{marginBottom:0}}>
+          <label className="field-label">Potência <span className="tip">Watts</span></label>
+          <input className="field-input" type="number" min="0" placeholder="Ex: 1500" value={d.potencia} onChange={e=>onChange('potencia',e.target.value)}/>
+        </div>
+        <div className="field-group" style={{marginBottom:0}}>
+          <label className="field-label">Horas/dia <span className="tip">0–24</span></label>
+          <input className="field-input" type="number" min="0" max="24" step="0.5" placeholder="Ex: 8" value={d.horas} onChange={e=>onChange('horas',e.target.value)}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Step2({tarifa,dias,onNext,onBack}){
+  const [devices,setDevices] = useState([emptyDev()]);
+  const [error,  setError]   = useState('');
+
+  const update = (id,f,v) => setDevices(prev=>prev.map(d=>d.id===id?{...d,[f]:v}:d));
+  const add    = () => setDevices(prev=>[...prev,emptyDev()]);
+  const remove = id => setDevices(prev=>prev.filter(d=>d.id!==id));
+
+  const liveTotal = useMemo(()=>devices.reduce((s,d)=>s+calcDevice(d,tarifa,dias).custo,0),[devices,tarifa,dias]);
+  const liveKwh   = useMemo(()=>devices.reduce((s,d)=>s+calcDevice(d,tarifa,dias).kwh,0),[devices,tarifa,dias]);
+
+  const handle = () => {
+    for(let i=0;i<devices.length;i++){
+      const d=devices[i];
+      if(!d.nome.trim())              return setError(`Aparelho ${i+1}: informe o nome.`);
+      if(!d.potencia||+d.potencia<=0) return setError(`Aparelho ${i+1}: informe a potência em Watts.`);
+      if(!d.horas||+d.horas<=0)       return setError(`Aparelho ${i+1}: informe as horas de uso por dia.`);
+      if(+d.horas>24)                 return setError(`Aparelho ${i+1}: máximo 24h/dia.`);
+    }
+    setError('');
+    onNext(devices);
+  };
+
+  return(
+    <div className="fade-in" style={{paddingBottom:90}}>
+      <p className="page-title">Aparelhos do estabelecimento</p>
+      <p className="page-sub">Adicione cada equipamento. A potência em Watts está na etiqueta do aparelho.</p>
+
+      <div className="info-callout">
+        <span className="icon">📋</span>
+        <span>Valores típicos: geladeira comercial ~300W · ar condicionado 9000 BTU ~900W · freezer ~250W · computador ~150W · lâmpada LED ~10W</span>
+      </div>
+
+      {devices.map((d,i)=>(
+        <DeviceCard key={d.id} d={d} i={i} tarifa={tarifa} dias={dias}
+          onChange={(f,v)=>update(d.id,f,v)}
+          onRemove={()=>remove(d.id)}
+          canRemove={devices.length>1}/>
+      ))}
+
+      <button className="btn-add" onClick={add}>+ Adicionar aparelho</button>
+      {error&&<div className="error-box" style={{marginTop:14}}>⚠ {error}</div>}
+
+      <div className="btn-row">
+        <button className="btn-ghost" onClick={onBack}>← Voltar</button>
+        <button className="btn-primary" onClick={handle}>Ver resultado →</button>
+      </div>
+
+      <div className="live-bar">
+        <div>
+          <p className="live-bar-label">ESTIMATIVA ACUMULADA</p>
+          <p className="live-bar-note">{devices.length} aparelho{devices.length!==1?'s':''} · {fmtKwh(liveKwh)}</p>
+        </div>
+        <div className="live-bar-right">
+          <p className="live-bar-val">{fmt(liveTotal)}</p>
+          <p className="live-bar-note">custo estimado/mês</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   STEP 3 — Resultado
+════════════════════════════════ */
+// fator de emissão médio Brasil (kg CO₂ por kWh) — MCTIC 2023
+const FATOR_CO2 = 0.0817;
+// equivalências
+const KM_CARRO_POR_KG_CO2 = 6.0;   // ~170g CO2/km
+const ARVORES_POR_KG_CO2  = 1/21;  // árvore absorve ~21kg CO2/ano
+
+function CostPerOperation({totalCalc}){
+  const [qtd,    setQtd]    = useState('');
+  const [tipo,   setTipo]   = useState('');
+  const custoPorOp = qtd&&+qtd>0 ? totalCalc / +qtd : null;
+  return(
+    <div className="cpo-box">
+      <p className="cpo-title">⚡ Custo energético por operação</p>
+      <p className="cpo-sub">Informe quantas operações sua empresa realizou neste mês para calcular o custo de energia por unidade produzida.</p>
+      <div className="cpo-input-row">
+        <div style={{flex:2,minWidth:140}}>
+          <label className="field-label" style={{marginBottom:6}}>Tipo de operação</label>
+          <input className="field-input" placeholder="Ex: pizzas, atendimentos, lavagens…" value={tipo} onChange={e=>setTipo(e.target.value)}/>
+        </div>
+        <div style={{flex:1,minWidth:100}}>
+          <label className="field-label" style={{marginBottom:6}}>Quantidade</label>
+          <input className="field-input" type="number" min="1" placeholder="Ex: 320" value={qtd} onChange={e=>setQtd(e.target.value)}/>
+        </div>
+      </div>
+      {custoPorOp!==null&&(
+        <div className="cpo-result">
+          <div>
+            <p className="cpo-result-label">Custo de energia por {tipo||'operação'}</p>
+            <p className="cpo-result-unit">baseado no custo estimado de R$ {totalCalc.toLocaleString('pt-BR',{minimumFractionDigits:2})} no mês</p>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <p className="cpo-result-val">{custoPorOp.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>
+            <p className="cpo-result-unit">por {tipo||'unidade'}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ESGCard({totalKwh}){
+  const co2kg      = totalKwh * FATOR_CO2;
+  const kmCarro    = co2kg * KM_CARRO_POR_KG_CO2;
+  const arvores    = co2kg * ARVORES_POR_KG_CO2;
+  const co2Fmt     = co2kg>=1000 ? (co2kg/1000).toFixed(2)+' ton' : co2kg.toFixed(1)+' kg';
+  return(
+    <div className="esg-box">
+      <span className="esg-icon">🌱</span>
+      <div style={{flex:1}}>
+        <p className="esg-title">Impacto ambiental — Relatório ESG</p>
+        <p style={{fontSize:12,color:'var(--muted)',lineHeight:1.5}}>
+          Baseado no fator de emissão médio da rede elétrica brasileira (0,0817 kg CO₂/kWh · MCTIC 2023).
+        </p>
+        <div className="esg-grid">
+          <div className="esg-item">
+            <p className="esg-item-label">CO₂ emitido</p>
+            <p className="esg-item-val">{co2Fmt}</p>
+            <p className="esg-item-unit">equivalente neste período</p>
+          </div>
+          <div className="esg-item">
+            <p className="esg-item-label">Equivalente em carro</p>
+            <p className="esg-item-val">{kmCarro.toFixed(0)}</p>
+            <p className="esg-item-unit">km rodados em automóvel</p>
+          </div>
+          <div className="esg-item">
+            <p className="esg-item-label">Árvores p/ compensar</p>
+            <p className="esg-item-val">{arvores<1?'<1':arvores.toFixed(1)}</p>
+            <p className="esg-item-unit">árvore{arvores>=2?'s':''} por 1 ano</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Step3({empresaId, mesData, devices, onVoltar, onHome}){
+  const {conta, tarifa, dias, mes, ano, mesLabel} = mesData;
+
+  const calcs = useMemo(()=>devices.map(d=>{
+    const {kwh,custo}=calcDevice(d,tarifa,dias);
+    return{...d,kwh,custo};
+  }),[devices,tarifa,dias]);
+
+  const totalKwh  = calcs.reduce((s,d)=>s+d.kwh,0);
+  const totalCalc = calcs.reduce((s,d)=>s+d.custo,0);
+  const diff      = conta-totalCalc;
+  const pct       = conta>0?Math.abs(diff/conta*100).toFixed(1):'0';
+  const maxCusto  = Math.max(...calcs.map(d=>d.custo),1);
+  const sorted    = [...calcs].sort((a,b)=>b.custo-a.custo);
+  const top       = sorted[0];
+
+  // save to localStorage (once)
+  useEffect(()=>{
+    const data = loadData();
+    const emp  = data.empresas.find(e=>e.id===empresaId);
+    if(!emp) return;
+    // avoid duplicates
+    const already = emp.meses.find(m=>m.mes===mes&&m.ano===ano);
+    if(already) return;
+    emp.meses.push({
+      id:uid(), mes, ano, mesLabel, conta, tarifa, dias,
+      totalCalc, diff, totalKwh,
+      devices: devices.map(d=>({...d}))
+    });
+    saveData(data);
+  },[]);
+
+  // hero
+  let heroClass,valClass,badge,desc;
+  const absDiff=Math.abs(diff);
+  if(absDiff<0.5){
+    heroClass='exact';valClass='amber';badge='✓ Consumo explicado';
+    desc='Os aparelhos cadastrados explicam exatamente o valor da fatura. Nenhum consumo oculto detectado.';
+  } else if(diff>0){
+    heroClass='over';valClass='red';badge='⚠ Consumo não identificado';
+    desc=`Há ${fmt(absDiff)} na sua fatura que os aparelhos cadastrados não explicam. Verifique equipamentos não listados, standby elevado ou aparelhos com defeito.`;
+  } else {
+    heroClass='ok';valClass='green';badge='↓ Abaixo do estimado';
+    desc=`O custo estimado (${fmt(totalCalc)}) é maior que a fatura real. Os aparelhos podem operar menos horas do que o informado.`;
+  }
+
+  // ALERTA de diferença expressiva (>15%)
+  const alertaExpressivo = diff>0 && +pct>15;
+
+  // SUGESTÃO de economia — aparelho mais caro
+  let sugestaoEcon = null;
+  if(top && top.custo>0){
+    const horasReducao = Math.min(2, parseFloat(top.horas)||0);
+    if(horasReducao>0){
+      const economiaKwh  = (parseFloat(top.potencia)||0)/1000*horasReducao*dias;
+      const economiaBRL  = economiaKwh*tarifa;
+      if(economiaBRL>0){
+        sugestaoEcon = {
+          nome: top.nome,
+          pct: (top.custo/conta*100).toFixed(0),
+          economia: economiaBRL,
+          horas: horasReducao
+        };
+      }
+    }
+  }
+
+  // PROJEÇÃO próximo mês (média histórica simples + atual)
+  const dataLS  = loadData();
+  const emp     = dataLS.empresas.find(e=>e.id===empresaId);
+  const mesesAnt = (emp?.meses||[]).filter(m=>!(m.mes===mes&&m.ano===ano));
+  let projecao = null;
+  if(mesesAnt.length>0){
+    const mediaConta = mesesAnt.reduce((s,m)=>s+m.conta,0)/mesesAnt.length;
+    const mediaEst   = mesesAnt.reduce((s,m)=>s+m.totalCalc,0)/mesesAnt.length;
+    projecao = { mediaConta, mediaEst };
+  }
+
+  return(
+    <div className="fade-in">
+      <p className="page-title">Resultado — {mesLabel}</p>
+      <p className="page-sub">{emp?.nome} · Período de {dias} dias</p>
+
+      {/* ALERTA EXPRESSIVO */}
+      {alertaExpressivo&&(
+        <div className="alert-box">
+          <span className="alert-icon">🚨</span>
+          <div>
+            <p className="alert-title">Atenção: diferença expressiva detectada</p>
+            <p className="alert-text">A diferença entre a fatura e o estimado é de <strong>{pct}%</strong> — acima do limite de 15%. Verifique se há aparelhos não cadastrados, equipamentos em standby constante, ou algum aparelho funcionando com defeito.</p>
+          </div>
+        </div>
+      )}
+
+      {/* HERO */}
+      <div className={`result-hero ${heroClass}`}>
+        <div className="result-badge">{badge}</div>
+        <p className={`result-value ${valClass}`}>{diff>0?'+':''}{fmt(diff)}</p>
+        <p className="result-desc">{desc}</p>
+      </div>
+
+      {/* STATS */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <p className="stat-label">Valor da fatura</p>
+          <p className="stat-val">{fmt(conta)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Estimado pelos aparelhos</p>
+          <p className="stat-val">{fmt(totalCalc)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Consumo estimado</p>
+          <p className="stat-val">{fmtKwh(totalKwh)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Diferença percentual</p>
+          <p className="stat-val" style={{color:absDiff<0.5?'var(--amber)':diff>0?'var(--red)':'var(--green)'}}>{pct}%</p>
+        </div>
+      </div>
+
+      {/* SUGESTÃO DE ECONOMIA */}
+      {sugestaoEcon&&(
+        <div className="suggestion-box">
+          <span className="suggestion-icon">💡</span>
+          <div>
+            <p className="suggestion-title">Sugestão de economia</p>
+            <p className="suggestion-text">
+              <strong>{sugestaoEcon.nome}</strong> representa <strong>{sugestaoEcon.pct}%</strong> da sua fatura.
+              Reduzir <strong>{sugestaoEcon.horas}h de uso por dia</strong> poderia economizar:
+            </p>
+            <p className="suggestion-saving">{fmt(sugestaoEcon.economia)}/mês</p>
+          </div>
+        </div>
+      )}
+
+      {/* PROJEÇÃO */}
+      {projecao&&(
+        <div className="card" style={{marginBottom:14}}>
+          <div className="breakdown-header">
+            <p className="breakdown-title">📈 Projeção próximo mês</p>
+          </div>
+          <div className="grid-2">
+            <div>
+              <p className="stat-label">Média histórica das faturas</p>
+              <p className="stat-val">{fmt(projecao.mediaConta)}</p>
+              <p style={{fontSize:11,color:'var(--muted)',marginTop:4}}>baseado em {mesesAnt.length} {mesesAnt.length===1?'mês anterior':'meses anteriores'}</p>
+            </div>
+            <div>
+              <p className="stat-label">Estimativa pelo consumo atual</p>
+              <p className="stat-val">{fmt(totalCalc)}</p>
+              <p style={{fontSize:11,color:'var(--muted)',marginTop:4}}>se os aparelhos mantiverem o mesmo uso</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RANKING */}
+      <div className="card">
+        <div className="breakdown-header">
+          <p className="breakdown-title">Consumo por aparelho</p>
+          <p style={{fontSize:11,color:'var(--muted)'}}>ordenado por custo</p>
+        </div>
+        {sorted.map((d,i)=>{
+          const barW = (d.custo/maxCusto*100).toFixed(1)+'%';
+          const pctBill = conta>0?(d.custo/conta*100).toFixed(1):'0';
+          return(
+            <div className="device-row" key={d.id||i}>
+              <span className="device-rank">#{i+1}</span>
+              <div className="device-info">
+                <p className="device-name">{d.nome}</p>
+                <p className="device-meta">{d.potencia}W · {d.horas}h/dia · {fmtKwh(d.kwh)}</p>
+                <div className="device-bar-wrap"><div className="device-bar-fill" style={{width:barW}}/></div>
+              </div>
+              <div className="device-cost-col">
+                <p className="device-cost">{fmt(d.custo)}</p>
+                <p className="device-pct">{pctBill}% da fatura</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ESG */}
+      <ESGCard totalKwh={totalKwh}/>
+
+      {/* COST PER OPERATION */}
+      <CostPerOperation totalCalc={totalCalc}/>
+
+      <button className="btn-print" onClick={()=>window.print()}>🖨️ Imprimir / Salvar PDF</button>
+      <button className="btn-restart" onClick={onHome}>↩ Voltar para empresas</button>
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   VIEW MES — resultado histórico
+════════════════════════════════ */
+function ViewMes({empresaId, mesId, onBack}){
+  const data  = loadData();
+  const emp   = data.empresas.find(e=>e.id===empresaId);
+  const m     = emp?.meses.find(m=>m.id===mesId);
+  if(!m) return null;
+
+  const {conta,tarifa,dias,mesLabel,totalCalc,diff,devices=[]} = m;
+  const calcs = devices.map(d=>({...d,...calcDevice(d,tarifa,dias)}));
+  const sorted = [...calcs].sort((a,b)=>b.custo-a.custo);
+  const maxCusto = Math.max(...calcs.map(d=>d.custo),1);
+  const absDiff = Math.abs(diff);
+  const pct = conta>0?(absDiff/conta*100).toFixed(1):'0';
+
+  let heroClass,valClass,badge;
+  if(absDiff<0.5){heroClass='exact';valClass='amber';badge='✓ Consumo explicado';}
+  else if(diff>0){heroClass='over';valClass='red';badge='⚠ Consumo não identificado';}
+  else{heroClass='ok';valClass='green';badge='↓ Abaixo do estimado';}
+
+  return(
+    <div className="fade-in">
+      <button className="btn-ghost" style={{marginBottom:24,padding:'8px 16px',fontSize:13}} onClick={onBack}>← Voltar</button>
+      <p className="page-title">Resultado — {mesLabel}</p>
+      <p className="page-sub">{emp.nome} · Período de {dias} dias</p>
+
+      <div className={`result-hero ${heroClass}`}>
+        <div className="result-badge">{badge}</div>
+        <p className={`result-value ${valClass}`}>{diff>0?'+':''}{fmt(diff)}</p>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card"><p className="stat-label">Fatura</p><p className="stat-val">{fmt(conta)}</p></div>
+        <div className="stat-card"><p className="stat-label">Estimado</p><p className="stat-val">{fmt(totalCalc)}</p></div>
+        <div className="stat-card"><p className="stat-label">Diferença</p><p className="stat-val" style={{color:absDiff<0.5?'var(--amber)':diff>0?'var(--red)':'var(--green)'}}>{pct}%</p></div>
+        <div className="stat-card"><p className="stat-label">Aparelhos</p><p className="stat-val">{devices.length}</p></div>
+      </div>
+
+      <div className="card">
+        <div className="breakdown-header"><p className="breakdown-title">Aparelhos registrados</p></div>
+        {sorted.map((d,i)=>{
+          const barW=(d.custo/maxCusto*100).toFixed(1)+'%';
+          const pctBill=conta>0?(d.custo/conta*100).toFixed(1):'0';
+          return(
+            <div className="device-row" key={i}>
+              <span className="device-rank">#{i+1}</span>
+              <div className="device-info">
+                <p className="device-name">{d.nome}</p>
+                <p className="device-meta">{d.potencia}W · {d.horas}h/dia · {fmtKwh(d.kwh)}</p>
+                <div className="device-bar-wrap"><div className="device-bar-fill" style={{width:barW}}/></div>
+              </div>
+              <div className="device-cost-col">
+                <p className="device-cost">{fmt(d.custo)}</p>
+                <p className="device-pct">{pctBill}% da fatura</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <button className="btn-print" onClick={()=>window.print()}>🖨️ Imprimir / Salvar PDF</button>
+    </div>
+  );
+}
+
+/* ════════════════════════════════
+   APP ROOT
+════════════════════════════════ */
+function App(){
+  const [screen, setScreen]   = useState('home');   // home | new-empresa | detail | new-mes-s1 | new-mes-s2 | result | view-mes
+  const [empresaId, setEmpId] = useState(null);
+  const [mesId,    setMesId]  = useState(null);
+  const [s1Data,   setS1Data] = useState(null);
+  const [devData,  setDevData]= useState(null);
+
+  const goHome = () => { setScreen('home'); setEmpId(null); setMesId(null); setS1Data(null); setDevData(null); };
+
+  const emp = useMemo(()=>{
+    if(!empresaId) return null;
+    return loadData().empresas.find(e=>e.id===empresaId)||null;
+  },[empresaId, screen]);
+
+  return(
+    <div className="shell">
+      <div className="brand" style={{cursor:'pointer'}} onClick={goHome}>
+        <div className="brand-dot"/>
+        <span className="brand-name">Split Energy</span>
+        <span className="brand-tag">MVP</span>
+      </div>
+
+      {(screen==='new-mes-s1'||screen==='new-mes-s2'||screen==='result')&&(
+        <StepBar current={screen==='new-mes-s1'?0:screen==='new-mes-s2'?1:2}/>
+      )}
+
+      {screen==='home'&&(
+        <Home
+          onSelect={id=>{setEmpId(id);setScreen('detail');}}
+          onNew={()=>setScreen('new-empresa')}/>
+      )}
+
+      {screen==='new-empresa'&&(
+        <NewEmpresaForm
+          onSave={id=>{setEmpId(id);setScreen('detail');}}
+          onBack={goHome}/>
+      )}
+
+      {screen==='detail'&&empresaId&&(
+        <EmpresaDetail
+          empresaId={empresaId}
+          onBack={goHome}
+          onNewMes={id=>{setEmpId(id);setScreen('new-mes-s1');}}
+          onViewMes={(eid,mid)=>{setEmpId(eid);setMesId(mid);setScreen('view-mes');}}/>
+      )}
+
+      {screen==='new-mes-s1'&&emp&&(
+        <Step1
+          emp={emp}
+          onNext={d=>{setS1Data(d);setScreen('new-mes-s2');}}
+          onBack={()=>setScreen('detail')}/>
+      )}
+
+      {screen==='new-mes-s2'&&s1Data&&(
+        <Step2
+          tarifa={s1Data.tarifa}
+          dias={s1Data.dias}
+          onNext={devs=>{setDevData(devs);setScreen('result');}}
+          onBack={()=>setScreen('new-mes-s1')}/>
+      )}
+
+      {screen==='result'&&s1Data&&devData&&(
+        <Step3
+          empresaId={empresaId}
+          mesData={s1Data}
+          devices={devData}
+          onHome={()=>{setScreen('detail');setS1Data(null);setDevData(null);}}/>
+      )}
+
+      {screen==='view-mes'&&empresaId&&mesId&&(
+        <ViewMes
+          empresaId={empresaId}
+          mesId={mesId}
+          onBack={()=>setScreen('detail')}/>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
